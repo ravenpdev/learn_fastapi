@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Annotated
 from pydantic import BaseModel
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Path, Query
 
 app = FastAPI()
 
@@ -94,21 +94,32 @@ def create_item(item: Item):
     return item_dict
 
 
+# needy, a required str
+# skip, an int with a default value of 0.
+# limit, an optional int.
+@app.get("/items/{item_id}")
+def read_item(
+    item_id: Annotated[int, Path(title="The ID of the item to get")],
+    q2: Annotated[int, Query(ge=1, le=10)],
+    q: Annotated[str | None, Query(alias="item-query")] = None,
+):
+    results: dict[str, str | int] = {"item_id": item_id}
+    if q:
+        results.update({"q": q})
+    return results
+
+
+# def read_item(item_id: int, needy: str, skip: int = 0, limit: int | None = None):
+#     item = {"item_id": item_id, "needy": needy, "skip": skip, "limit": limit}
+#     return item
+
+
 @app.put("/items/{item_id}")
 def update_item(item_id: int, item: Item, q: str | None = None):
     result = {"item_id": item_id, **item.dict()}
     if q:
         result.update({"q": q})
     return result
-
-
-# needy, a required str
-# skip, an int with a default value of 0.
-# limit, an optional int.
-@app.get("/items/{item_id}")
-def read_item(item_id: int, needy: str, skip: int = 0, limit: int | None = None):
-    item = {"item_id": item_id, "needy": needy, "skip": skip, "limit": limit}
-    return item
 
 
 @app.get("/users/{user_id}/items/{item_id}")
