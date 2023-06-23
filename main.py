@@ -1,8 +1,15 @@
 from enum import Enum
+from typing import Annotated
 from pydantic import BaseModel
-from fastapi import Body, FastAPI
+from fastapi import FastAPI, Query
 
 app = FastAPI()
+
+
+class Post(BaseModel):
+    title: str
+    content: str | None = None
+
 
 fake_posts_db = [
     {"id": 1, "title": "Post 1"},
@@ -35,9 +42,9 @@ def read_post(id: int, q: str | None = None, short: bool = False):
 
 
 @app.post("/posts")
-def create_post(payload: dict = Body(...)):
-    print(payload)
-    return {"data": {"id": 1, "title": "post 1"}}
+def create_post(post: Post):
+    print(post)
+    return {"data": post}
 
 
 class Item(BaseModel):
@@ -45,6 +52,37 @@ class Item(BaseModel):
     description: str | None = None
     price: float
     tax: float | None = None
+
+
+@app.get("/items")
+def all_items(
+    q: Annotated[
+        str | None,
+        Query(
+            alias="item-query",
+            min_length=5,
+            title="Query string",
+            description="Query string for the items to search in the database that have a good match",
+            deprecated=True,
+            include_in_schema=False,
+        ),
+    ] = None
+):
+    # def all_items(
+    #     q: Annotated[
+    #         list[str] | None,
+    #         Query(
+    #             title="Query String",
+    #             description="Query string for the items to search in the database that have a good match",
+    #         ),
+    #     ] = None
+    # ):
+    results: dict[str, list[dict[str, str]] | list[str] | str] = {
+        "items": [{"item_id": "Foo"}, {"item_id": "bar"}]
+    }
+    if q:
+        results.update({"q": q})
+    return results
 
 
 @app.post("/items")
